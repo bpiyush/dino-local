@@ -129,6 +129,8 @@ def get_args_parser():
     parser.add_argument("--dist_url", default="env://", type=str, help="""url used to set up
         distributed training; see https://pytorch.org/docs/stable/distributed.html""")
     parser.add_argument("--local_rank", default=0, type=int, help="Please ignore and do not set this argument.")
+    parser.add_argument("--wandb", type=str, default="False", help="Use wandb to log training metrics")
+
     return parser
 
 
@@ -138,6 +140,12 @@ def train_dino(args):
     print("git:\n  {}\n".format(utils.get_sha()))
     print("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
     cudnn.benchmark = True
+    
+    if args.wandb.lower() == "true":
+        import wandb
+        run_name = f"{args.arch}_ps={args.patch_size}_lr={args.lr}"
+        wandb.init(project="dino-local", config=args, name=run_name, entity="bpiyush")
+        wandb.config.update(args)
 
     # ============ preparing data ... ============
     transform = DataAugmentationDINO(
@@ -310,6 +318,11 @@ def train_dino(args):
         if utils.is_main_process():
             with (Path(args.output_dir) / "log.txt").open("a") as f:
                 f.write(json.dumps(log_stats) + "\n")
+            
+            if args.wandb.lower() == "true":
+                import wandb
+                wandb.log(log_stats)
+
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
@@ -371,6 +384,10 @@ def train_one_epoch(student, teacher, teacher_without_ddp, dino_loss, data_loade
         metric_logger.update(loss=loss.item())
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         metric_logger.update(wd=optimizer.param_groups[0]["weight_decay"])
+        if args.wandb.lower() == "true":
+            import wandb
+            wandb.log({"train/batch/loss": loss.item(), "lr": optimizer.param_groups[0]["lr"]})
+
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
