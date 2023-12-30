@@ -297,5 +297,5 @@ if __name__ == '__main__':
 
         # evaluate
         retrieved = dataset.eval_result(indices, distances)
-    dist.barrier()
+    # dist.barrier()
 

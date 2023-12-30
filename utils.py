@@ -246,7 +246,7 @@ class SmoothedValue(object):
         if not is_dist_avail_and_initialized():
             return
         t = torch.tensor([self.count, self.total], dtype=torch.float64, device='cuda')
-        dist.barrier()
+        # dist.barrier()
         dist.all_reduce(t)
         t = t.tolist()
         self.count = int(t[0])
@@ -495,7 +495,7 @@ def init_distributed_mode(args):
     torch.cuda.set_device(args.gpu)
     print('| distributed init (rank {}): {}'.format(
         args.rank, args.dist_url), flush=True)
-    dist.barrier()
+    # dist.barrier()
     setup_for_distributed(args.rank == 0)
 
 

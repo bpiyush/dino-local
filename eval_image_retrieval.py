@@ -198,4 +198,4 @@ if __name__ == '__main__':
         mapH, apsH, mprH, prsH = utils.compute_map(ranks, gnd_t, ks)
         print('>> {}: mAP M: {}, H: {}'.format(args.dataset, np.around(mapM*100, decimals=2), np.around(mapH*100, decimals=2)))
         print('>> {}: mP@k{} M: {}, H: {}'.format(args.dataset, np.array(ks), np.around(mprM*100, decimals=2), np.around(mprH*100, decimals=2)))
-    dist.barrier()
+    # dist.barrier()
