@@ -63,6 +63,9 @@ def get_args_parser():
         We recommend setting a higher value with small batches: for example use 0.9995 with batch size of 256.""")
     parser.add_argument('--use_bn_in_head', default=False, type=utils.bool_flag,
         help="Whether to use batch normalizations in projection head (Default: False)")
+    parser.add_argument(
+        "--init_ckpt", default=None, type=str, help="Path to the checkpoint to warmstart from",
+    )
 
     # Temperature teacher parameters
     parser.add_argument('--warmup_teacher_temp', default=0.04, type=float,
@@ -190,6 +193,18 @@ def train_dino(args):
         teacher,
         DINOHead(embed_dim, args.out_dim, args.use_bn_in_head),
     )
+    
+    # Initialize from pre-trained checkpoint, if available
+    if args.init_ckpt is not None:
+        ckpt = torch.load(args.init_ckpt, map_location='cpu')
+        ssd = {k.replace("module.", ""):v for k, v in ckpt['student'].items()}
+        s_msg = student.load_state_dict(ssd, strict=False)
+        tsd = {k.replace("module.", ""):v for k, v in ckpt['teacher'].items()}
+        t_msg = teacher.load_state_dict(tsd, strict=False)
+        print(f"Loaded pre-trained model from {args.init_ckpt}")
+        print("Student load state dict message: ", s_msg)
+        print("Teacher load state dict message: ", t_msg)
+
     # move networks to gpu
     student, teacher = student.cuda(), teacher.cuda()
     # synchronize batch norms (if any)
